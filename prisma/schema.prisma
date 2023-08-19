@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["clientExtensions", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions      = [pgcrypto]
+}
+
+model company {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description String?       @db.VarChar(255)
+  name        String        @db.VarChar(255)
+  created_at  DateTime      @default(now()) @db.Timestamp(6)
+  updated_at  DateTime      @default(now()) @db.Timestamp(6)
+  user_id     String        @db.Uuid
+  tenant_id   String        @db.VarChar(255)
+  user        user          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ftp_account ftp_account[]
+  member      member[]
+}
+
+model file {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String       @db.VarChar(255)
+  size           Int
+  uploaded_at    DateTime     @db.Timestamp(6)
+  ftp_account_id String?      @db.Uuid
+  user_id        String?      @db.Uuid
+  created_at     DateTime     @default(now()) @db.Timestamp(6)
+  updated_at     DateTime     @default(now()) @db.Timestamp(6)
+  ftp_account    ftp_account? @relation(fields: [ftp_account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user           user?        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model ftp_account {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username   String       @db.VarChar(255)
+  password   String       @db.VarChar(255)
+  status     String       @db.VarChar(255)
+  company_id String?      @db.Uuid
+  created_at DateTime     @default(now()) @db.Timestamp(6)
+  updated_at DateTime     @default(now()) @db.Timestamp(6)
+  file       file[]
+  company    company?     @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  permission permission[]
+}
+
+model member {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  joined_at  DateTime  @db.Timestamp(6)
+  left_at    DateTime? @db.Timestamp(6)
+  status     String    @db.VarChar(255)
+  company_id String?   @db.Uuid
+  user_id    String?   @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  updated_at DateTime  @default(now()) @db.Timestamp(6)
+  company    company?  @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       user?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model permission {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ftp_account_id String?      @db.Uuid
+  user_id        String?      @db.Uuid
+  can_upload     Boolean
+  can_download   Boolean
+  can_delete     Boolean
+  can_update     Boolean
+  created_at     DateTime     @default(now()) @db.Timestamp(6)
+  updated_at     DateTime     @default(now()) @db.Timestamp(6)
+  ftp_account    ftp_account? @relation(fields: [ftp_account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user           user?        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model user {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email       String       @unique @db.VarChar(255)
+  firstName   String?      @db.VarChar(255)
+  lastName    String?      @db.VarChar(255)
+  roq_user_id String       @db.VarChar(255)
+  tenant_id   String       @db.VarChar(255)
+  created_at  DateTime     @default(now()) @db.Timestamp(6)
+  updated_at  DateTime     @default(now()) @db.Timestamp(6)
+  company     company[]
+  file        file[]
+  member      member[]
+  permission  permission[]
+}
